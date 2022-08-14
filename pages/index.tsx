@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 import Head from "../components/head";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "../styles/Home.module.css";
 
 const CURSOR_CHAR = "_";
@@ -9,9 +9,9 @@ const CURSOR_CHAR = "_";
 const Home: NextPage = () => {
   const [title, setTitle] = useState<string>("");
   const [cursor, setCursor] = useState(CURSOR_CHAR);
-  let cursorIntervalId = -1;
-  let fakeTypeSetupId = -1;
-  let fakeTypeTimeoutId: number[] = [];
+  let cursorIntervalId = useRef(-1);
+  let fakeTypeSetupId = useRef(-1);
+  let fakeTypeTimeoutId = useRef<number[]>([]);
 
   const updateCursor = () => {
     setCursor((cursor) => {
@@ -25,24 +25,24 @@ const Home: NextPage = () => {
         return prevTitle + char;
       });
     }, delay);
-    fakeTypeTimeoutId.push(timeoutId);
+    fakeTypeTimeoutId.current.push(timeoutId);
   };
 
   const cleanUp = () => {
-    window.clearInterval(cursorIntervalId);
-    window.clearTimeout(fakeTypeSetupId);
-    fakeTypeTimeoutId.forEach(window.clearTimeout);
+    window.clearInterval(cursorIntervalId.current);
+    window.clearTimeout(fakeTypeSetupId.current);
+    fakeTypeTimeoutId.current.forEach(window.clearTimeout);
   };
 
   useEffect(() => {
-    cursorIntervalId = window.setInterval(updateCursor, 500);
-    fakeTypeSetupId = window.setTimeout(() => {
+    cursorIntervalId.current = window.setInterval(updateCursor, 500);
+    fakeTypeSetupId.current = window.setTimeout(() => {
       fakeType("H", 100);
       fakeType("e", 200);
       fakeType("l", 300);
       fakeType("l", 380);
       fakeType("o", 580);
-    });
+    }, 1000);
 
     return () => {
       cleanUp();
