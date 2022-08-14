@@ -5,6 +5,11 @@ const nextConfig = {
   images: {
     domains: ["user-images.githubusercontent.com", "i.imgur.com"],
   },
+  experimental: {
+    images: {
+      unoptimized: true,
+    },
+  },
 };
 
 module.exports = nextConfig;

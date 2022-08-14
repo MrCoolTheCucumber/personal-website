@@ -36,7 +36,6 @@ const ProjectCard = (props: Project) => {
           src={props.img}
           layout="fill"
           objectFit="scale-down"
-          quality={100}
           alt="The project image picture"
         />
       </div>
