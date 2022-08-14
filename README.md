@@ -1,34 +1,23 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# My Personal Website
 
-## Getting Started
+## About
 
-First, run the development server:
+This repo is the code for my personal webiste hosted at https://mrcoolthecucumber.com via cloudflare pages. It is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) and is exported as a static site.
 
-```bash
-npm run dev
-# or
-yarn dev
-```
+## Instructions
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Requirements:
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+- NodeJs v16+
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+Clone the repo and then install the dependancies with `npm i`. To run the website locally you can run `npm run dev`.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+To generate the static site, run `npm run build` and then `npm run export`. This will create an `out` directory in the root of the repo. You can test out the generated site with `serve` via `npx serve out`.
 
-## Learn More
+### Posts
 
-To learn more about Next.js, take a look at the following resources:
+To add a new post, simply create a new markdown file in `posts/`. It must contain the nessecary meta data at the top of the file, which is parsed with the `gray-matter` library. The blog post is then generated automatically.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Projects
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+To add a new project, edit the file `projects/data.json`. It contains an array of objects where each object represents a project. So just add a new object.
