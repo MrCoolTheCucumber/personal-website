@@ -23,8 +23,22 @@ const ProjectCard = (props: Project) => {
         <div>{props.description}</div>
       </div>
 
-      <div className={styles.imgWrapper}>
-        <img className={styles.img} src={props.img} />
+      <div
+        className={styles.imgWrapper}
+        style={{
+          position: "relative",
+          height: "100%",
+          width: "300px",
+        }}
+      >
+        <Image
+          className={styles.img}
+          src={props.img}
+          layout="fill"
+          objectFit="scale-down"
+          quality={100}
+          alt="The project image picture"
+        />
       </div>
     </div>
   );
