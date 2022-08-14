@@ -1,0 +1,30 @@
+.navbar {
+  grid-area: nav;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.navbar > a {
+  transform: translateY(5px);
+  color: #f3f3f3;
+  text-decoration: none;
+  margin-right: 20px;
+}
+
+.navbar > a:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.name {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  grid-area: name;
+  font-family: 'Roboto Mono';
+  font-size: 32px;
+  margin-right: 50px;
+}

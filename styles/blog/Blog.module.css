@@ -1,0 +1,67 @@
+.blog {
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 30px;
+}
+
+.title {
+  font-weight: bold;
+  font-size: 46px;
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+
+  border-bottom: 1px solid rgba(141, 141, 141, 0.6);
+}
+
+.date {
+  font-size: 14px;
+  color: rgb(197, 197, 197);
+}
+
+.footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  height: 50px;
+}
+
+.footer > span {
+  color: #a0a0a0;
+  font-size: 13px;
+
+  margin-right: 10px;
+  background-color: #9a9a9a29;
+  padding: 5px 10px;
+}
+
+.content {
+  margin-bottom: 50px;
+  font-size: 19px;
+}
+
+.content a:link {
+  color: rgb(124, 217, 253);
+}
+
+.content a:visited {
+  color: rgb(124, 217, 253);
+}
+
+.content pre {
+  font-family: "Roboto Mono";
+  font-size: 15px;
+}
+
+.content :not(pre) code {
+  font-family: "Roboto Mono";
+  background-color: #2b2b2b;
+  font-size: 15px;
+
+  padding: 2px 5px;
+}

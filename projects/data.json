@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Frosty",
+    "description": "Creating an accurate, maintainable Game Boy emulator written in the rust programming language.",
+    "img": "https://user-images.githubusercontent.com/16002713/119414812-330f3000-bce8-11eb-9eac-b12482dbc3f2.png",
+    "links": [
+      {
+        "name": "Github",
+        "value": "https://github.com/MrCoolTheCucumber/frosty"
+      }
+    ]
+  },
+  {
+    "name": "Chip 8",
+    "description": "My first ever emulator project. Served as a gentle introduction some basic concepts, as well as a cool little project.",
+    "img": "https://i.imgur.com/T0W73T5.png",
+    "links": [
+      {
+        "name": "Github",
+        "value": "https://github.com/RubenG123/my-site/tree/master/src/projects/chip8"
+      }
+    ]
+  }
+]

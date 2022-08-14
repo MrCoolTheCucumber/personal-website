@@ -1,0 +1,31 @@
+.root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wrapper {
+  width: 100%;
+  max-width: 1040px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid {
+  height: 100%;
+  padding-left: 30px;
+  padding-right: 30px;
+  
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  grid-template-rows: 100px 1fr;
+  grid-template-areas: 
+    "name nav"
+    "content content";
+}
+
+.content {
+  grid-area: content;
+}
