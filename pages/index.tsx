@@ -44,6 +44,10 @@ const Home: NextPage = () => {
       fakeType("l", 380);
       fakeType("o", 580);
     });
+
+    return () => {
+      cleanUp();
+    };
   }, []);
 
   return (
