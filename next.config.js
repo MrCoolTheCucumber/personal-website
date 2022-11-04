@@ -10,6 +10,10 @@ const nextConfig = {
       unoptimized: true,
     },
   },
+  webpack: (config, ctx) => {
+    config.experiments.asyncWebAssembly = true;
+    return config;
+  },
 };
 
 module.exports = nextConfig;

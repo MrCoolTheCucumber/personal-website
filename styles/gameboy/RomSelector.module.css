@@ -1,0 +1,29 @@
+.romListWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #f3f3f3;
+  min-width: 24em;
+  max-width: 24em;
+  min-height: 10em;
+  max-height: 15em;
+  overflow: auto;
+}
+
+.romList {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 1em;
+}
+
+.romListItem {
+  width: 100%;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  font-size: 0.8em;
+}
+
+.romListItem:hover {
+  background-color: rgba(96, 107, 107, 0.603);
+}

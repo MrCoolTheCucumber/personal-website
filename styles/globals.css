@@ -21,6 +21,24 @@ a {
   box-sizing: border-box;
 }
 
+.button {
+  border: 1px solid #fefefe;
+  cursor: pointer;
+  color: #171717;
+  background-color: #f3f3f3;
+  padding: 0.3em 0.8em;
+  border-radius: 0.2em;
+  font-size: 14px;
+}
+
+.button:hover {
+  background-color: #ffffff;
+}
+
+/* .button:focus {
+  outline: rgba(92, 187, 250, 0.959) 5px auto;
+} */
+
 /* @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
