@@ -6,10 +6,16 @@ import React, {
   useState,
 } from "react";
 import { GameBoy, Keycode } from "@mrcoolthecucumber/gameboy_web";
-
-const GB_FPS_INTERVAL = 1000 / 60;
+import useLoopHelper from "./useLoopHelper";
 
 type GameBoyWebInterface = typeof import("@mrcoolthecucumber/gameboy_web");
+
+/**
+ *  Number of cycles per second the gameboy does in single speed mode.
+ *  When the emulator is in double speed mode, you don't need to double the speed
+ *  as the `tick` function will internally tick twice
+ */
+export const SPEED = 4_194_304;
 
 export type GameBoyCartridge = {
   rom: Uint8Array;
@@ -26,6 +32,8 @@ export type GameBoyContext = {
   loadGame: (cart: GameBoyCartridge) => void;
   start: () => void;
   stop: () => void;
+  takeSnapshot: () => Uint8Array | undefined;
+  loadSnapshot: (snapshot: Uint8Array) => void;
 };
 
 const keyToKeycode = (key: string): Keycode | undefined => {
@@ -49,25 +57,53 @@ const keyToKeycode = (key: string): Keycode | undefined => {
   }
 };
 
-const GameBoyStats = () => {};
+interface GBStatsProps {
+  fps: number;
+}
+
+const GameBoyStats = (props: GBStatsProps) => {
+  const fpsPercentage = (props.fps / 59.73) * 100;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        fontFamily: "Roboto Mono",
+        fontSize: "0.75em",
+      }}
+    >
+      <div>
+        {`FPS: ${props.fps.toFixed(2)} (${fpsPercentage.toFixed(0)}%)`}{" "}
+      </div>
+    </div>
+  );
+};
 
 // https://stackoverflow.com/questions/37949981/call-child-method-from-parent
 // https://stackoverflow.com/questions/62210286/declare-type-with-react-useimperativehandle
 
 const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
   (props: GameBoyComponentProps, ref) => {
+    const loopHelper = useLoopHelper(500, SPEED);
+    const [fps, setFps] = useState(0);
+
     const [gbWasm, setGbWasm] = useState<GameBoyWebInterface>();
     const [gbScale, setGbScale] = useState(props.gbScale ?? 2);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const gbInstance = useRef<GameBoy | null>(null);
-    const lastDraw = useRef(0);
     const rafId = useRef(-1);
     const turbo = useRef(false);
     const onKeyUpHandlerRef = useRef<(e: KeyboardEvent) => void>();
     const onKeyDownHandlerRef = useRef<(e: KeyboardEvent) => void>();
     const stopped = useRef(false);
-    const frames = useRef(0);
+
+    const lastLoop = useRef(performance.now());
+    const lastFpsReport = useRef(performance.now());
+    const framesDrawn = useRef(0);
+    const fpsReportRateMs = 500;
+
+    const gbIntervalId = useRef(-1);
 
     const setUpEventHandlers = () => {
       onKeyDownHandlerRef.current = (e: KeyboardEvent) => {
@@ -103,40 +139,30 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       window.addEventListener("keyup", onKeyUpHandlerRef.current);
     };
 
-    const tickFrame = (timestamp: DOMHighResTimeStamp) => {
+    const render = () => {
       let gb = gbInstance.current;
       let canvas = canvasRef.current;
       if (!gb || !canvas) return;
 
-      if (
-        (timestamp - lastDraw.current >= GB_FPS_INTERVAL || turbo.current) &&
-        !stopped.current
-      ) {
-        gb.tick_to_frame();
-        let fb = gb.get_frame_buffer();
+      let fb = gb.get_frame_buffer();
 
-        let ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (!ctx) return;
+      let ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return;
 
-        let imgData = ctx.getImageData(0, 0, 160, 144);
-        for (let i = 0; i < 160 * 144 * 3; i += 3) {
-          let r = fb[i];
-          let g = fb[i + 1];
-          let b = fb[i + 2];
+      let imgData = ctx.getImageData(0, 0, 160, 144);
+      for (let i = 0; i < 160 * 144 * 3; i += 3) {
+        let r = fb[i];
+        let g = fb[i + 1];
+        let b = fb[i + 2];
 
-          let imgDataIndex = (i / 3) * 4;
-          imgData.data[imgDataIndex] = r;
-          imgData.data[imgDataIndex + 1] = g;
-          imgData.data[imgDataIndex + 2] = b;
-          imgData.data[imgDataIndex + 3] = 255;
-        }
-
-        ctx.putImageData(imgData, 0, 0);
-        lastDraw.current = performance.now();
-        frames.current += 1;
+        let imgDataIndex = (i / 3) * 4;
+        imgData.data[imgDataIndex] = r;
+        imgData.data[imgDataIndex + 1] = g;
+        imgData.data[imgDataIndex + 2] = b;
+        imgData.data[imgDataIndex + 3] = 255;
       }
 
-      rafId.current = window.requestAnimationFrame(tickFrame);
+      ctx.putImageData(imgData, 0, 0);
     };
 
     useEffect(() => {
@@ -166,6 +192,29 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       };
     }, []);
 
+    /**
+     * Called on each request animation frame callback
+     */
+    const runEmulator = (now: DOMHighResTimeStamp) => {
+      const ticks = loopHelper.calculateTicksToRun(now, turbo.current);
+
+      for (let _ = 0; _ < ticks; ++_) {
+        // TODO: might be better to have hot loop in wasm
+        gbInstance.current?.tick();
+        if (gbInstance.current?.consume_draw_flag()) {
+          render();
+          loopHelper.recordFrameDraw();
+        }
+      }
+
+      let fps = loopHelper.reportFps(now);
+      if (fps) {
+        setFps(fps);
+      }
+
+      rafId.current = window.requestAnimationFrame(runEmulator);
+    };
+
     useImperativeHandle(ref, () => ({
       increaseScale: () => setGbScale(gbScale + 1),
       decreaseScale: () => {
@@ -182,10 +231,21 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
             gbInstance.current.free();
           }
           window.cancelAnimationFrame(rafId.current);
+          window.clearInterval(gbIntervalId.current);
 
           gbInstance.current = newGb;
-          rafId.current = window.requestAnimationFrame(tickFrame);
+
+          loopHelper.reset();
+          rafId.current = window.requestAnimationFrame(runEmulator);
         }
+      },
+      takeSnapshot: () => {
+        if (!gbWasm || !gbInstance.current) return;
+        return gbWasm.take_snapshot(gbInstance.current);
+      },
+      loadSnapshot: (snapshot: Uint8Array) => {
+        if (!gbWasm || !gbInstance.current) return;
+        gbWasm.load_snapshot(snapshot, gbInstance.current);
       },
     }));
 
@@ -202,6 +262,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
             backgroundColor: "white",
           }}
         />
+        <GameBoyStats fps={fps} />
       </div>
     );
   }

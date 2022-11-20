@@ -10,6 +10,7 @@ const GBPage = () => {
   const gameRef = useRef<Game>();
   const [stop, setStop] = useState(false);
   const gbRef = useRef<GameBoyContext>(null);
+  const snapshot = useRef<Uint8Array>();
 
   const reset = () => {
     if (gameRef.current) {
@@ -58,6 +59,24 @@ const GBPage = () => {
           Reset
         </button>
         {renderStartStopButton()}
+        <button
+          className="button"
+          onClick={() => {
+            snapshot.current = gbRef.current?.takeSnapshot();
+          }}
+        >
+          Take
+        </button>
+        <button
+          className="button"
+          onClick={() => {
+            if (snapshot.current && gbRef.current) {
+              gbRef.current?.loadSnapshot(snapshot.current);
+            }
+          }}
+        >
+          Load
+        </button>
       </div>
       <GameBoyComponent ref={gbRef} gbScale={2} />
       <RomSelector onRomSelected={onRomSelectedHandler} />
