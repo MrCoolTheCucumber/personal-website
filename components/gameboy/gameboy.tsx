@@ -98,13 +98,6 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
     const onKeyDownHandlerRef = useRef<(e: KeyboardEvent) => void>();
     const stopped = useRef(false);
 
-    const lastLoop = useRef(performance.now());
-    const lastFpsReport = useRef(performance.now());
-    const framesDrawn = useRef(0);
-    const fpsReportRateMs = 500;
-
-    const gbIntervalId = useRef(-1);
-
     const setUpEventHandlers = () => {
       onKeyDownHandlerRef.current = (e: KeyboardEvent) => {
         let gb = gbInstance.current;
@@ -231,8 +224,6 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
             gbInstance.current.free();
           }
           window.cancelAnimationFrame(rafId.current);
-          window.clearInterval(gbIntervalId.current);
-
           gbInstance.current = newGb;
 
           loopHelper.reset();
