@@ -83,7 +83,7 @@ const GameBoyStats = (props: GBStatsProps) => {
 // https://stackoverflow.com/questions/62210286/declare-type-with-react-useimperativehandle
 
 const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
-  (props: GameBoyComponentProps, ref) => {
+  function GameBoyComponent(props: GameBoyComponentProps, ref) {
     const loopHelper = useLoopHelper(500, SPEED);
     const [fps, setFps] = useState(0);
 
@@ -183,7 +183,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
           onKeyUpHandlerRef.current ?? (() => {})
         );
       };
-    }, []);
+    }, [gbWasm]);
 
     /**
      * Called on each request animation frame callback
