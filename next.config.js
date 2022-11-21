@@ -4,11 +4,7 @@ const nextConfig = {
   swcMinify: true,
   images: {
     domains: ["user-images.githubusercontent.com", "i.imgur.com"],
-  },
-  experimental: {
-    images: {
-      unoptimized: true,
-    },
+    unoptimized: true,
   },
   webpack: (config, ctx) => {
     config.experiments.asyncWebAssembly = true;
