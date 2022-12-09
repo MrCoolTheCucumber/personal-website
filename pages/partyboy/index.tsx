@@ -31,16 +31,6 @@ const GBPage = () => {
     setRenderState(RenderState.PlayGame);
   };
 
-  useEffect(() => {
-    if (renderState === RenderState.PlayGame) {
-      console.log(gameRef.current, gbRef.current);
-      window.setTimeout(() => {
-        if (!gameRef.current) return;
-        gbRef.current?.loadGame(gameRef.current);
-      }, 100);
-    }
-  }, [renderState]);
-
   const onChooseBtnClicked = () => {
     if (!stop) {
       gbRef.current?.stop();
@@ -149,18 +139,26 @@ const GBPage = () => {
       <GameBoyComponent
         ref={gbRef}
         gbScale={3}
+        game={gameRef.current}
         onReportFps={(fps) => setFps(fps)}
       />
       {renderGameBoyFooter()}
     </div>
   );
 
-  switch (renderState) {
-    case RenderState.SelectRom:
-      return renderRomSelection();
-    case RenderState.PlayGame:
-      return renderGameBoy();
-  }
+  return (
+    <>
+      {renderState === RenderState.PlayGame && renderGameBoy()}
+      <div
+        style={{
+          visibility:
+            renderState === RenderState.SelectRom ? "visible" : "hidden",
+        }}
+      >
+        {renderRomSelection()}
+      </div>
+    </>
+  );
 };
 
 export default GBPage;

@@ -24,6 +24,7 @@ export type GameBoyCartridge = {
 
 export interface GameBoyComponentProps {
   gbScale?: number;
+  game?: GameBoyCartridge;
   onReportFps: (fps: number) => void;
 }
 
@@ -144,7 +145,13 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       };
 
       if (!gbWasm) {
-        loadWasm();
+        loadWasm().then(() => {
+          if (props.game) {
+            loadGame(props.game);
+          }
+        });
+      } else if (props.game) {
+        loadGame(props.game);
       }
 
       setUpEventHandlers();
@@ -197,6 +204,22 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       rafId.current = window.requestAnimationFrame(runEmulator);
     };
 
+    const loadGame = (cart: GameBoyCartridge) => {
+      const newGb = gbWasm?.GameBoyBuilder.new().rom(cart.rom).build();
+      const canvas = canvasRef.current;
+
+      if (newGb && canvas) {
+        if (gbInstance.current) {
+          gbInstance.current.free();
+        }
+        window.cancelAnimationFrame(rafId.current);
+        gbInstance.current = newGb;
+
+        loopHelper.reset();
+        rafId.current = window.requestAnimationFrame(runEmulator);
+      }
+    };
+
     useImperativeHandle(ref, () => ({
       increaseScale: () => setGbScale(gbScale + 1),
       decreaseScale: () => {
@@ -204,21 +227,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       },
       start: () => (stopped.current = false),
       stop: () => (stopped.current = true),
-      loadGame: (cart: GameBoyCartridge) => {
-        const newGb = gbWasm?.GameBoyBuilder.new().rom(cart.rom).build();
-        const canvas = canvasRef.current;
-
-        if (newGb && canvas) {
-          if (gbInstance.current) {
-            gbInstance.current.free();
-          }
-          window.cancelAnimationFrame(rafId.current);
-          gbInstance.current = newGb;
-
-          loopHelper.reset();
-          rafId.current = window.requestAnimationFrame(runEmulator);
-        }
-      },
+      loadGame,
       takeSnapshot: () => {
         if (!gbWasm || !gbInstance.current) return;
         return gbWasm.take_snapshot(gbInstance.current);
