@@ -17,15 +17,21 @@
   height: 100%;
   padding-left: 30px;
   padding-right: 30px;
-  
+
   display: grid;
   grid-template-columns: 350px 1fr;
   grid-template-rows: 100px 1fr;
-  grid-template-areas: 
+  grid-template-areas:
     "name nav"
     "content content";
 }
 
 .content {
   grid-area: content;
+
+  /* 
+    TODO: remove grid css and just use flex box for name and nav. Below is
+    a work around for an issue with the grid in mobile
+  */
+  padding-right: 30px;
 }

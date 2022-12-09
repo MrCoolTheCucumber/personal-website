@@ -30,9 +30,12 @@
 }
 
 .imgWrapper {
+  width: 20%;
+  max-width: 20%;
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-right: 20px;
 }
 
 .detailsWrapper {

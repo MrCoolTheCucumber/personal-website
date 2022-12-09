@@ -1,7 +1,7 @@
 [
   {
     "name": "Partyboy",
-    "description": "A GameBoy Color emulator",
+    "description": "A GameBoy Color emulator, the successor to frosty. Supports many cool features such as save states and being able to run in the browser.",
     "img": "https://user-images.githubusercontent.com/16002713/206076824-d8f6bd3b-e383-4d2c-9bad-494303dd5d22.gif",
     "links": [
       {
