@@ -33,10 +33,11 @@ const GBPage = () => {
 
   useEffect(() => {
     if (renderState === RenderState.PlayGame) {
+      console.log(gameRef.current, gbRef.current);
       window.setTimeout(() => {
         if (!gameRef.current) return;
         gbRef.current?.loadGame(gameRef.current);
-      }, 0);
+      }, 100);
     }
   }, [renderState]);
 
@@ -67,10 +68,8 @@ const GBPage = () => {
     const text = stop ? "Start" : "Stop";
     const onClick = () => {
       if (!stop) {
-        console.log("stopping", gbRef.current);
         gbRef.current?.stop();
       } else {
-        console.log("starting");
         gbRef.current?.start();
       }
       setStop(!stop);
