@@ -186,7 +186,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       );
 
       // This can happen if the user tabs out for too long I think
-      if (ticks > BigInt(4_000_000)) {
+      if (ticks > BigInt(4_000_000) && !turbo.current) {
         ticks = BigInt(0);
       }
 
