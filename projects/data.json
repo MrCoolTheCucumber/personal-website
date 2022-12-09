@@ -1,5 +1,20 @@
 [
   {
+    "name": "Partyboy",
+    "description": "A GameBoy Color emulator",
+    "img": "https://user-images.githubusercontent.com/16002713/206076824-d8f6bd3b-e383-4d2c-9bad-494303dd5d22.gif",
+    "links": [
+      {
+        "name": "Github",
+        "value": "https://github.com/MrCoolTheCucumber/partyboy"
+      },
+      {
+        "name": "Demo",
+        "value": "/partyboy"
+      }
+    ]
+  },
+  {
     "name": "Frosty",
     "description": "Creating an accurate, maintainable Game Boy emulator written in the rust programming language.",
     "img": "https://user-images.githubusercontent.com/16002713/119414812-330f3000-bce8-11eb-9eac-b12482dbc3f2.png",
