@@ -185,6 +185,11 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
         Math.floor(loopHelper.calculateTicksToRun(now, turbo.current))
       );
 
+      // This can happen if the user tabs out for too long I think
+      if (ticks > BigInt(4_000_000)) {
+        ticks = BigInt(0);
+      }
+
       while (!stopped.current) {
         let remaining = gbWasm?.batch_ticks(gbInstance.current, ticks);
         if (remaining != BigInt(0)) {
