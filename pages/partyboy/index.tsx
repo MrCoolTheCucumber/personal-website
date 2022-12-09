@@ -16,6 +16,7 @@ const GBPage = () => {
   const [renderState, setRenderState] = useState<RenderState>(
     RenderState.SelectRom
   );
+  const games = useRef<Game[]>([]);
   const gameRef = useRef<Game>();
   const gbRef = useRef<GameBoyContext>(null);
   const snapshot = useRef<Uint8Array>();
@@ -54,6 +55,18 @@ const GBPage = () => {
     );
   };
 
+  const renderGitHubLink = () => {
+    return (
+      <a
+        className={`${styles.fps}`}
+        style={{ marginRight: "20px" }}
+        href="https://github.com/MrCoolTheCucumber/partyboy"
+      >
+        GitHub
+      </a>
+    );
+  };
+
   const renderStartStopButton = () => {
     const text = stop ? "Start" : "Stop";
     const onClick = () => {
@@ -75,7 +88,11 @@ const GBPage = () => {
     return (
       <div className={styles.root}>
         <h2>Roms</h2>
-        <RomSelector onRomSelected={onRomSelectedHandler} />
+        <RomSelector
+          games={games.current}
+          onGameSelected={onRomSelectedHandler}
+          onGameAdded={(game) => games.current.push(game)}
+        />
       </div>
     );
   };
@@ -86,6 +103,7 @@ const GBPage = () => {
       <div className={styles.footer}>
         <div className={styles.controlHeader}>
           {renderHelpTooltip()}
+          {renderGitHubLink()}
           <button
             className={`button ${styles.footerBtnPad}`}
             onClick={() => onChooseBtnClicked()}
@@ -146,19 +164,12 @@ const GBPage = () => {
     </div>
   );
 
-  return (
-    <>
-      {renderState === RenderState.PlayGame && renderGameBoy()}
-      <div
-        style={{
-          visibility:
-            renderState === RenderState.SelectRom ? "visible" : "hidden",
-        }}
-      >
-        {renderRomSelection()}
-      </div>
-    </>
-  );
+  switch (renderState) {
+    case RenderState.SelectRom:
+      return renderRomSelection();
+    case RenderState.PlayGame:
+      return renderGameBoy();
+  }
 };
 
 export default GBPage;
