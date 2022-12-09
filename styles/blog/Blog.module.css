@@ -15,12 +15,11 @@
   padding-bottom: 5px;
   margin-bottom: 5px;
 
-  border-bottom: 1px solid rgba(141, 141, 141, 0.6);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.45);
 }
 
 .date {
   font-size: 14px;
-  color: rgb(197, 197, 197);
 }
 
 .footer {
@@ -46,16 +45,20 @@
 }
 
 .content a:link {
-  color: rgb(124, 217, 253);
+  color: rgb(56, 159, 255);
 }
 
 .content a:visited {
-  color: rgb(124, 217, 253);
+  color: rgb(56, 159, 255);
 }
 
 .content pre {
   font-family: "Roboto Mono";
   font-size: 15px;
+}
+
+.content code {
+  color: #fff;
 }
 
 .content :not(pre) code {

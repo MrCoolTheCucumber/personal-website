@@ -5,8 +5,8 @@ body {
   font-family: "Open Sans", Arial, -apple-system, BlinkMacSystemFont, Segoe UI,
     Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue,
     sans-serif;
-  color: #f3f3f3;
-  background: #171717;
+  color: #171717;
+  background: #fff;
 
   @import url("https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap");
   @import url("https://fonts.googleapis.com/css2?family=Open+Sans&display=swap");
@@ -20,6 +20,24 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.button {
+  border: 1px solid #171717;
+  cursor: pointer;
+  color: #171717;
+  background-color: #f3f3f3;
+  padding: 0.3em 0.8em;
+  border-radius: 0.2em;
+  font-size: 14px;
+}
+
+.button:hover {
+  background-color: #e6e6e6;
+}
+
+/* .button:focus {
+  outline: rgba(92, 187, 250, 0.959) 5px auto;
+} */
 
 /* @media (prefers-color-scheme: dark) {
   html {

@@ -34,8 +34,7 @@ const ProjectCard = (props: Project) => {
         <Image
           className={styles.img}
           src={props.img}
-          layout="fill"
-          objectFit="scale-down"
+          fill
           alt="The project image picture"
         />
       </div>
