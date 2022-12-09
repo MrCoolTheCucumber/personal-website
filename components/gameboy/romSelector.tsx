@@ -11,6 +11,7 @@ export type Game = {
 };
 
 const RomSelector = (props: RomSelectorProps) => {
+  const [loadingDemoRoms, setLoadingDemoRoms] = useState(true);
   const [games, setGames] = useState<Game[]>([]);
 
   const fetchDemoRoms = async () => {
@@ -31,6 +32,7 @@ const RomSelector = (props: RomSelectorProps) => {
       })
     );
 
+    setLoadingDemoRoms(false);
     setGames([...games, ...demoRomGames]);
   };
 
@@ -83,6 +85,7 @@ const RomSelector = (props: RomSelectorProps) => {
   };
 
   const renderRomListItem = (game: Game, i: number) => {
+    const name = <span>{game.name}</span>;
     const playBtn = (
       <input
         type="button"
@@ -93,24 +96,33 @@ const RomSelector = (props: RomSelectorProps) => {
       />
     );
 
-    const name = <span>{game.name}</span>;
-
     return (
-      <div
-        key={i}
-        onClick={() => props.onRomSelected(game)}
-        className={styles.romListItem}
-      >
+      <div key={i} className={styles.romListItem}>
         {name}
         {playBtn}
       </div>
     );
   };
 
+  const renderDemoLoading = () => {
+    if (loadingDemoRoms) {
+      return (
+        <div key="loading" className={styles.romListItem}>
+          Loading demo roms...
+        </div>
+      );
+    }
+  };
+
   const renderRomList = () => {
     const items = games.map(renderRomListItem);
 
-    return <div className={styles.romList}>{items}</div>;
+    return (
+      <div className={styles.romList}>
+        {renderDemoLoading()}
+        {items}
+      </div>
+    );
   };
 
   return (
