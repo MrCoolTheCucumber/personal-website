@@ -137,17 +137,6 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       ctx.putImageData(imgData, 0, 0);
     };
 
-    const setCanvasBlack = () => {
-      let canvas = canvasRef.current;
-      if (!canvas) return;
-
-      let ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.fillStyle = "black";
-      ctx.fillRect(0, 0, 144, 160);
-    };
-
     useEffect(() => {
       const loadWasm = async () => {
         const wasm = await import("@mrcoolthecucumber/gameboy_web");
@@ -159,7 +148,6 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       }
 
       setUpEventHandlers();
-      setCanvasBlack();
 
       return () => {
         window.cancelAnimationFrame(rafId.current);

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import GameBoyComponent, {
   GameBoyContext,
 } from "../../components/gameboy/gameboy";
@@ -27,13 +27,18 @@ const GBPage = () => {
   };
 
   const onRomSelectedHandler = (game: Game) => {
-    console.log("test");
+    gameRef.current = game;
     setRenderState(RenderState.PlayGame);
-    window.setTimeout(() => {
-      gameRef.current = game;
-      gbRef.current?.loadGame(game);
-    });
   };
+
+  useEffect(() => {
+    if (renderState === RenderState.PlayGame) {
+      window.setTimeout(() => {
+        if (!gameRef.current) return;
+        gbRef.current?.loadGame(gameRef.current);
+      }, 0);
+    }
+  }, [renderState]);
 
   const onChooseBtnClicked = () => {
     if (!stop) {
