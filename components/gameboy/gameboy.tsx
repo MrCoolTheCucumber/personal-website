@@ -24,6 +24,7 @@ export type GameBoyCartridge = {
 
 export interface GameBoyComponentProps {
   gbScale?: number;
+  onReportFps: (fps: number) => void;
 }
 
 export type GameBoyContext = {
@@ -55,28 +56,6 @@ const keyToKeycode = (key: string): Keycode | undefined => {
     case "n":
       return Keycode.Select;
   }
-};
-
-interface GBStatsProps {
-  fps: number;
-}
-
-const GameBoyStats = (props: GBStatsProps) => {
-  const fpsPercentage = (props.fps / 59.73) * 100;
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        fontFamily: "Roboto Mono",
-        fontSize: "0.75em",
-      }}
-    >
-      <div>
-        {`FPS: ${props.fps.toFixed(2)} (${fpsPercentage.toFixed(0)}%)`}{" "}
-      </div>
-    </div>
-  );
 };
 
 // https://stackoverflow.com/questions/37949981/call-child-method-from-parent
@@ -158,6 +137,17 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       ctx.putImageData(imgData, 0, 0);
     };
 
+    const setCanvasBlack = () => {
+      let canvas = canvasRef.current;
+      if (!canvas) return;
+
+      let ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, 144, 160);
+    };
+
     useEffect(() => {
       const loadWasm = async () => {
         const wasm = await import("@mrcoolthecucumber/gameboy_web");
@@ -169,6 +159,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       }
 
       setUpEventHandlers();
+      setCanvasBlack();
 
       return () => {
         window.cancelAnimationFrame(rafId.current);
@@ -188,21 +179,31 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
     /**
      * Called on each request animation frame callback
      */
-    const runEmulator = (now: DOMHighResTimeStamp) => {
-      const ticks = loopHelper.calculateTicksToRun(now, turbo.current);
+    const runEmulator = (_: DOMHighResTimeStamp) => {
+      if (!gbInstance.current || !gbWasm) {
+        return;
+      }
 
-      for (let _ = 0; _ < ticks; ++_) {
-        // TODO: might be better to have hot loop in wasm
-        gbInstance.current?.tick();
-        if (gbInstance.current?.consume_draw_flag()) {
+      const now = performance.now();
+
+      let ticks = BigInt(
+        Math.floor(loopHelper.calculateTicksToRun(now, turbo.current))
+      );
+
+      while (!stopped.current) {
+        let remaining = gbWasm?.batch_ticks(gbInstance.current, ticks);
+        if (remaining != BigInt(0)) {
           render();
           loopHelper.recordFrameDraw();
+          ticks = remaining;
+        } else {
+          break;
         }
       }
 
       let fps = loopHelper.reportFps(now);
       if (fps) {
-        setFps(fps);
+        props.onReportFps(fps);
       }
 
       rafId.current = window.requestAnimationFrame(runEmulator);
@@ -216,7 +217,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       start: () => (stopped.current = false),
       stop: () => (stopped.current = true),
       loadGame: (cart: GameBoyCartridge) => {
-        const newGb = gbWasm?.GameBoy.new(cart.rom);
+        const newGb = gbWasm?.GameBoyBuilder.new().rom(cart.rom).build();
         const canvas = canvasRef.current;
 
         if (newGb && canvas) {
@@ -253,7 +254,6 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
             backgroundColor: "white",
           }}
         />
-        <GameBoyStats fps={fps} />
       </div>
     );
   }

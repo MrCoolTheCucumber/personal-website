@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "../../styles/gameboy/RomSelector.module.css";
 
 export interface RomSelectorProps {
@@ -12,6 +12,31 @@ export type Game = {
 
 const RomSelector = (props: RomSelectorProps) => {
   const [games, setGames] = useState<Game[]>([]);
+
+  const fetchDemoRoms = async () => {
+    const demoRoms = ["cute-demo.gbc", "pocket.gb"];
+    let demoRomGames = await Promise.all(
+      demoRoms.map(async (romName) => {
+        let data = await (
+          await fetch(`roms/${romName}`).then((res) => res.blob())
+        ).arrayBuffer();
+
+        const rom = new Uint8Array(data);
+        const game: Game = {
+          name: romName,
+          rom,
+        };
+
+        return game;
+      })
+    );
+
+    setGames([...games, ...demoRomGames]);
+  };
+
+  useEffect(() => {
+    fetchDemoRoms();
+  }, []);
 
   const onFileSelected = (event: React.FormEvent<HTMLInputElement>) => {
     const files = event.currentTarget.files;
@@ -37,7 +62,11 @@ const RomSelector = (props: RomSelectorProps) => {
           id="romFileBtn"
           value="Add ROM"
           className="button"
-          style={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}
+          style={{
+            marginTop: "0.5rem",
+            marginBottom: "0.5rem",
+            alignSelf: "flex-end",
+          }}
           onClick={() => {
             window.document.getElementById("file")?.click();
           }}
@@ -53,27 +82,42 @@ const RomSelector = (props: RomSelectorProps) => {
     );
   };
 
+  const renderRomListItem = (game: Game, i: number) => {
+    const playBtn = (
+      <input
+        type="button"
+        id="playBtn"
+        value="Play"
+        className="button"
+        onClick={() => props.onRomSelected(game)}
+      />
+    );
+
+    const name = <span>{game.name}</span>;
+
+    return (
+      <div
+        key={i}
+        onClick={() => props.onRomSelected(game)}
+        className={styles.romListItem}
+      >
+        {name}
+        {playBtn}
+      </div>
+    );
+  };
+
   const renderRomList = () => {
-    const items = games.map((game, i) => {
-      return (
-        <div
-          key={i}
-          onClick={() => props.onRomSelected(game)}
-          className={styles.romListItem}
-        >
-          {game.name}
-        </div>
-      );
-    });
+    const items = games.map(renderRomListItem);
 
     return <div className={styles.romList}>{items}</div>;
   };
 
   return (
-    <>
+    <div className={styles.romSelectorWrapper}>
+      {renderRomList()}
       {renderRomUploadBtn()}
-      <div className={styles.romListWrapper}>{renderRomList()}</div>
-    </>
+    </div>
   );
 };
 

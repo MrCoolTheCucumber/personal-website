@@ -7,7 +7,7 @@
   flex-direction: row;
   justify-content: space-between;
 
-  background-color: #f3f3f30c;
+  background-color: #d1d1d142;
 }
 
 .card:last-child {
@@ -15,7 +15,7 @@
 }
 
 .card:hover {
-  background-color: #f3f3f314;
+  background-color: #d1d1d17a;
 }
 
 .title {
@@ -55,7 +55,7 @@
 
   font-size: 14px;
   text-decoration: none;
-  color: #f3f3f3;
+  color: #171717;
 
   height: 25px;
   width: 60px;

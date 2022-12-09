@@ -14,7 +14,7 @@ const useLoopHelper = (reportFreqMs: number, gbSpeed: number) => {
 
   const calculateTicksToRun = (now: DOMHighResTimeStamp, turbo = false) => {
     const elapsedMs = now - lastLoop.current;
-    const ticks = turbo ? gbSpeed : (elapsedMs / 1000) * gbSpeed;
+    const ticks = turbo ? gbSpeed : (elapsedMs * gbSpeed) / 1000;
     lastLoop.current = now;
     return ticks;
   };
