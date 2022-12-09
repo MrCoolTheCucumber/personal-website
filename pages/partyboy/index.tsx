@@ -16,6 +16,7 @@ const GBPage = () => {
   const [renderState, setRenderState] = useState<RenderState>(
     RenderState.SelectRom
   );
+  const games = useRef<Game[]>([]);
   const gameRef = useRef<Game>();
   const gbRef = useRef<GameBoyContext>(null);
   const snapshot = useRef<Uint8Array>();
@@ -75,7 +76,11 @@ const GBPage = () => {
     return (
       <div className={styles.root}>
         <h2>Roms</h2>
-        <RomSelector onRomSelected={onRomSelectedHandler} />
+        <RomSelector
+          games={games.current}
+          onGameSelected={onRomSelectedHandler}
+          onGameAdded={(game) => games.current.push(game)}
+        />
       </div>
     );
   };
@@ -146,19 +151,12 @@ const GBPage = () => {
     </div>
   );
 
-  return (
-    <>
-      {renderState === RenderState.PlayGame && renderGameBoy()}
-      <div
-        style={{
-          visibility:
-            renderState === RenderState.SelectRom ? "visible" : "hidden",
-        }}
-      >
-        {renderRomSelection()}
-      </div>
-    </>
-  );
+  switch (renderState) {
+    case RenderState.SelectRom:
+      return renderRomSelection();
+    case RenderState.PlayGame:
+      return renderGameBoy();
+  }
 };
 
 export default GBPage;

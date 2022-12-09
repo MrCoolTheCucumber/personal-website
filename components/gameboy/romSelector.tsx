@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import styles from "../../styles/gameboy/RomSelector.module.css";
 
 export interface RomSelectorProps {
-  onRomSelected: (game: Game) => void;
+  games?: Game[];
+  onGameSelected: (game: Game) => void;
+  onGameAdded: (game: Game) => void;
 }
 
 export type Game = {
@@ -34,10 +36,16 @@ const RomSelector = (props: RomSelectorProps) => {
 
     setLoadingDemoRoms(false);
     setGames([...games, ...demoRomGames]);
+    demoRomGames.forEach((game) => props.onGameAdded(game));
   };
 
   useEffect(() => {
-    fetchDemoRoms();
+    if (props.games && props.games.length !== 0) {
+      setLoadingDemoRoms(false);
+      setGames(props.games);
+    } else {
+      fetchDemoRoms();
+    }
   }, []);
 
   const onFileSelected = (event: React.FormEvent<HTMLInputElement>) => {
@@ -53,6 +61,7 @@ const RomSelector = (props: RomSelectorProps) => {
         rom,
       };
       setGames([...games, game]);
+      props.onGameAdded(game);
     });
   };
 
@@ -92,7 +101,7 @@ const RomSelector = (props: RomSelectorProps) => {
         id="playBtn"
         value="Play"
         className="button"
-        onClick={() => props.onRomSelected(game)}
+        onClick={() => props.onGameSelected(game)}
       />
     );
 
