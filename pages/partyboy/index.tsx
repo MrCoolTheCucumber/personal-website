@@ -55,6 +55,18 @@ const GBPage = () => {
     );
   };
 
+  const renderGitHubLink = () => {
+    return (
+      <a
+        className={`${styles.fps}`}
+        style={{ marginRight: "20px" }}
+        href="https://github.com/MrCoolTheCucumber/partyboy"
+      >
+        GitHub
+      </a>
+    );
+  };
+
   const renderStartStopButton = () => {
     const text = stop ? "Start" : "Stop";
     const onClick = () => {
@@ -91,6 +103,7 @@ const GBPage = () => {
       <div className={styles.footer}>
         <div className={styles.controlHeader}>
           {renderHelpTooltip()}
+          {renderGitHubLink()}
           <button
             className={`button ${styles.footerBtnPad}`}
             onClick={() => onChooseBtnClicked()}

@@ -42,6 +42,7 @@
 .toolTip {
   text-decoration: dashed;
   margin-right: 10px;
+  cursor: help;
 }
 
 .toolTip:hover .toolTipText {
