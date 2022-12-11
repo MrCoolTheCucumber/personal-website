@@ -5,8 +5,13 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { GameBoy, Keycode } from "@mrcoolthecucumber/gameboy_web";
+import {
+  BitPackedState,
+  GameBoy,
+  Keycode,
+} from "@mrcoolthecucumber/gameboy_web";
 import useLoopHelper from "./useLoopHelper";
+import useRewindHelper from "./useRewindHelper";
 
 type GameBoyWebInterface = typeof import("@mrcoolthecucumber/gameboy_web");
 
@@ -34,8 +39,10 @@ export type GameBoyContext = {
   loadGame: (cart: GameBoyCartridge) => void;
   start: () => void;
   stop: () => void;
-  takeSnapshot: () => Uint8Array | undefined;
-  loadSnapshot: (snapshot: Uint8Array) => void;
+  takeSnapshot: () => BitPackedState | undefined;
+  loadSnapshot: (snapshot: BitPackedState) => void;
+  startRewind: () => void;
+  stopRewind: () => void;
 };
 
 const keyToKeycode = (key: string): Keycode | undefined => {
@@ -65,7 +72,7 @@ const keyToKeycode = (key: string): Keycode | undefined => {
 const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
   function GameBoyComponent(props: GameBoyComponentProps, ref) {
     const loopHelper = useLoopHelper(500, SPEED);
-    const [fps, setFps] = useState(0);
+    const rewindHelper = useRewindHelper();
 
     const [gbWasm, setGbWasm] = useState<GameBoyWebInterface>();
     const [gbScale, setGbScale] = useState(props.gbScale ?? 2);
@@ -77,6 +84,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
     const onKeyUpHandlerRef = useRef<(e: KeyboardEvent) => void>();
     const onKeyDownHandlerRef = useRef<(e: KeyboardEvent) => void>();
     const stopped = useRef(false);
+    const rewinding = useRef(false);
 
     const setUpEventHandlers = () => {
       onKeyDownHandlerRef.current = (e: KeyboardEvent) => {
@@ -92,6 +100,11 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
           e.preventDefault();
           turbo.current = true;
         }
+
+        if (e.key == "q") {
+          e.preventDefault();
+          rewinding.current = true;
+        }
       };
       onKeyUpHandlerRef.current = (e: KeyboardEvent) => {
         let gb = gbInstance.current;
@@ -105,6 +118,11 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
         if (e.key === " ") {
           e.preventDefault();
           turbo.current = false;
+        }
+
+        if (e.key == "q") {
+          e.preventDefault();
+          rewinding.current = false;
         }
       };
 
@@ -190,14 +208,29 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
         ticks = BigInt(0);
       }
 
-      while (!stopped.current) {
+      while (!stopped.current && !rewinding.current) {
         let remaining = gbWasm?.batch_ticks(gbInstance.current, ticks);
-        if (remaining != BigInt(0)) {
-          render();
-          loopHelper.recordFrameDraw();
-          ticks = remaining;
-        } else {
+
+        if (remaining <= BigInt(0)) {
           break;
+        }
+
+        render();
+        loopHelper.recordFrameDraw();
+        ticks = remaining;
+
+        if (!rewinding.current) {
+          let state = gbWasm.take_snapshot(gbInstance.current);
+          rewindHelper.pushState(state);
+        }
+      }
+
+      if (rewinding.current) {
+        let state = rewindHelper.popState();
+        if (state) {
+          gbWasm.load_snapshot(gbInstance.current, state);
+          render();
+          state.free();
         }
       }
 
@@ -237,10 +270,12 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
         if (!gbWasm || !gbInstance.current) return;
         return gbWasm.take_snapshot(gbInstance.current);
       },
-      loadSnapshot: (snapshot: Uint8Array) => {
+      loadSnapshot: (snapshot: BitPackedState) => {
         if (!gbWasm || !gbInstance.current) return;
-        gbWasm.load_snapshot(snapshot, gbInstance.current);
+        gbWasm.load_snapshot(gbInstance.current, snapshot);
       },
+      startRewind: () => (rewinding.current = true),
+      stopRewind: () => (rewinding.current = false),
     }));
 
     return (
@@ -254,6 +289,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
             height: `${144 * gbScale}px`,
             imageRendering: "pixelated",
             backgroundColor: "white",
+            border: "1px solid black",
           }}
         />
       </div>

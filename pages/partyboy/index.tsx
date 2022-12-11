@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import { BitPackedState } from "@mrcoolthecucumber/gameboy_web";
+import React, { useRef, useState } from "react";
 import GameBoyComponent, {
   GameBoyContext,
 } from "../../components/gameboy/gameboy";
@@ -19,7 +20,7 @@ const GBPage = () => {
   const games = useRef<Game[]>([]);
   const gameRef = useRef<Game>();
   const gbRef = useRef<GameBoyContext>(null);
-  const snapshot = useRef<Uint8Array>();
+  const snapshot = useRef<BitPackedState>();
 
   const reset = () => {
     if (gameRef.current) {
@@ -42,7 +43,7 @@ const GBPage = () => {
   const renderHelpTooltip = () => {
     return (
       <div className={`${styles.toolTip} ${styles.fps}`}>
-        Help &#9432;
+        <b>Help &#9432;</b>
         <div className={styles.toolTipText}>
           D-Pad: WASD <br />
           A: O <br />
@@ -97,57 +98,66 @@ const GBPage = () => {
     );
   };
 
-  const renderGameBoyFooter = () => {
+  const renderGameBoyFooterCtrlRow = () => {
     const fpsPercentage = (fps / 59.73) * 100;
     return (
-      <div className={styles.footer}>
-        <div className={styles.controlHeader}>
-          {renderHelpTooltip()}
-          {renderGitHubLink()}
-          <button
-            className={`button ${styles.footerBtnPad}`}
-            onClick={() => onChooseBtnClicked()}
-          >
-            Choose
-          </button>
-          <button
-            className="button"
-            onClick={() => gbRef.current?.increaseScale()}
-          >
-            +
-          </button>
-          <button
-            className={`button ${styles.footerBtnPad}`}
-            onClick={() => gbRef.current?.decreaseScale()}
-          >
-            -
-          </button>
-          <button className="button" onClick={() => reset()}>
-            Reset
-          </button>
-          {renderStartStopButton()}
-          <button
-            className="button"
-            onClick={() => {
-              snapshot.current = gbRef.current?.takeSnapshot();
-            }}
-          >
-            Take
-          </button>
-          <button
-            className={`button ${styles.footerBtnPad}`}
-            onClick={() => {
-              if (snapshot.current && gbRef.current) {
-                gbRef.current?.loadSnapshot(snapshot.current);
-              }
-            }}
-          >
-            Load
-          </button>
-          <div className={styles.fps}>
-            {`FPS: ${fps.toFixed(2)} (${fpsPercentage.toFixed(0)}%)`}
-          </div>
+      <div className={styles.footerRow}>
+        {renderGitHubLink()}
+        <button
+          className={`button ${styles.footerBtnPad}`}
+          onClick={() => onChooseBtnClicked()}
+        >
+          Choose
+        </button>
+        <button
+          className="button"
+          onClick={() => gbRef.current?.increaseScale()}
+        >
+          +
+        </button>
+        <button
+          className={`button ${styles.footerBtnPad}`}
+          onClick={() => gbRef.current?.decreaseScale()}
+        >
+          -
+        </button>
+        <button className="button" onClick={() => reset()}>
+          Reset
+        </button>
+        {renderStartStopButton()}
+        <button
+          className="button"
+          onClick={() => {
+            snapshot.current = gbRef.current?.takeSnapshot();
+          }}
+        >
+          Take
+        </button>
+        <button
+          className={`button ${styles.footerBtnPad}`}
+          onClick={() => {
+            if (snapshot.current && gbRef.current) {
+              gbRef.current?.loadSnapshot(snapshot.current);
+            }
+          }}
+        >
+          Load
+        </button>
+        <div className={styles.fps} style={{ width: "120px" }}>
+          {`FPS: ${fps.toFixed(2)} (${fpsPercentage.toFixed(0)}%)`}
         </div>
+      </div>
+    );
+  };
+
+  const renderGameBoyFooter = () => {
+    return (
+      <div className={styles.footer}>
+        <div className={styles.footerRow} style={{ fontSize: "0.8em" }}>
+          D-Pad: WASD | A: O | B: K | START: M | SELECT: N | TURBO: Space (hold)
+          | REWIND: Q (hold)
+        </div>
+        {renderGameBoyFooterCtrlRow()}
       </div>
     );
   };
