@@ -12,6 +12,7 @@ import {
 } from "@mrcoolthecucumber/gameboy_web";
 import useLoopHelper from "./useLoopHelper";
 import useRewindHelper from "./useRewindHelper";
+import useAudioHelper from "./useAudioHelper";
 
 type GameBoyWebInterface = typeof import("@mrcoolthecucumber/gameboy_web");
 
@@ -73,6 +74,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
   function GameBoyComponent(props: GameBoyComponentProps, ref) {
     const loopHelper = useLoopHelper(500, SPEED);
     const rewindHelper = useRewindHelper();
+    const audioHelper = useAudioHelper(48000);
 
     const [gbWasm, setGbWasm] = useState<GameBoyWebInterface>();
     const [gbScale, setGbScale] = useState(props.gbScale ?? 2);
@@ -99,6 +101,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
         if (e.key === " ") {
           e.preventDefault();
           turbo.current = true;
+          audioHelper.stop();
         }
 
         if (e.key == "q") {
@@ -118,6 +121,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
         if (e.key === " ") {
           e.preventDefault();
           turbo.current = false;
+          audioHelper.reset();
         }
 
         if (e.key == "q") {
@@ -208,16 +212,18 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
         ticks = BigInt(0);
       }
 
-      while (!stopped.current && !rewinding.current) {
-        let remaining = gbWasm?.batch_ticks(gbInstance.current, ticks);
+      while (!stopped.current && !rewinding.current && ticks > BigInt(0)) {
+        let output = gbWasm?.batch_ticks(gbInstance.current, ticks);
 
-        if (remaining <= BigInt(0)) {
+        audioHelper.handleAudio(output.samples);
+
+        if (output.remaining_ticks <= BigInt(0)) {
           break;
         }
 
         render();
         loopHelper.recordFrameDraw();
-        ticks = remaining;
+        ticks = output.remaining_ticks;
 
         if (!rewinding.current) {
           let state = gbWasm.take_snapshot(gbInstance.current);
