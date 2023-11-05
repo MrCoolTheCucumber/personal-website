@@ -5,9 +5,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { BitPackedState, Keycode } from "@mrcoolthecucumber/gameboy_web";
+import { Keycode } from "@mrcoolthecucumber/gameboy_web";
 import useAudioHelper from "./useAudioHelper";
-import { GbMsg, MsgFromGb, MsgToGb } from "./gbMsg.ts";
+import { GbMsg, MsgFromGb } from "./gbMsg.ts";
 import GBWorker from "../../components/gameboy/gameboy.worker.ts";
 
 /**
@@ -168,6 +168,10 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
           cart,
         },
       });
+
+      // warmup
+      const blankSamples = new Float32Array(512 * 36).fill(0);
+      audioHelper.handleAudio(blankSamples);
     };
 
     const onWorkerRecv = function (e: MessageEvent<GbMsg<MsgFromGb>>) {
@@ -198,14 +202,16 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
     // TODO: call createImageBitmap(ImageData) in the webworker, possibly in wasm itself,
     //       and then send that to the main thread instead of the framebuffer
     const renderLoop = (_: DOMHighResTimeStamp) => {
+      if (audioHelper.needMoreSamples() && worker.current) {
+        worker.current.postMessage({ type: "runforsamples" });
+      }
+
       if (!currentFrame.current || !canvasRef.current) {
         rafId.current = window.requestAnimationFrame(renderLoop);
         return;
       }
 
-      let ctx = canvasRef.current.getContext("2d", {
-        willReadFrequently: true,
-      });
+      let ctx = canvasRef.current.getContext("2d");
       if (!ctx) {
         rafId.current = window.requestAnimationFrame(renderLoop);
         return;

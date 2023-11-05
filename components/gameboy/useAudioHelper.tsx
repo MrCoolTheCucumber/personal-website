@@ -9,6 +9,10 @@ const useAudioHelper = (sampleRate: number) => {
     })
   );
 
+  const needMoreSamples = (): boolean => {
+    return currentAudioSeconds.current <= audioCtx.current.currentTime + 0.075;
+  };
+
   const handleAudio = (samples: Float32Array) => {
     if (stopped.current) {
       return;
@@ -22,6 +26,7 @@ const useAudioHelper = (sampleRate: number) => {
 
     const audioBuffer = audioCtx.current.createBuffer(2, frameCount, 48000);
 
+    // TODO: optimize gb_web to return samples as array per channel, rather than one array
     for (let channel = 0; channel < 2; channel += 1) {
       const nowBuffering = audioBuffer.getChannelData(channel);
       for (let i = 0; i < frameCount; i += 1) {
@@ -33,13 +38,6 @@ const useAudioHelper = (sampleRate: number) => {
     audioSource.buffer = audioBuffer;
     audioSource.connect(audioCtx.current.destination);
 
-    // taken from here https://github.com/Powerlated/OptimeGB/blob/master/src/core/audioplayer.ts#L91-L94
-    // TODO after some time, the game gets audio delay
-    // Reset time if close to buffer underrun
-    if (currentAudioSeconds.current <= audioCtx.current.currentTime + 0.02) {
-      console.log("Buffer underun detected?");
-      currentAudioSeconds.current = audioCtx.current.currentTime + 0.017;
-    }
     audioSource.start(currentAudioSeconds.current);
     currentAudioSeconds.current += frameCount / audioCtx.current.sampleRate;
   };
@@ -61,6 +59,7 @@ const useAudioHelper = (sampleRate: number) => {
     handleAudio,
     stop,
     reset,
+    needMoreSamples,
   };
 };
 

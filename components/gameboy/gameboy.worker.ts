@@ -11,12 +11,12 @@ const loopHelper = useLoopHelper(500, SPEED); // eslint-disable-line
 const rewindHelper = useRewindHelper(); // eslint-disable-line
 
 let wasm: GameBoyWebInterface | null = null;
-let canvas: OffscreenCanvas | null = null;
 let snapshot: BitPackedState | undefined;
 let stopped = false;
 let gb: GameBoy | null = null;
 let rafId = -1;
 let turbo = false;
+let turboId: NodeJS.Timer;
 let rewinding = false;
 
 console.log("WebWorker running...");
@@ -31,20 +31,19 @@ console.log("WebWorker running...");
 });
 
 worker.onmessage = function onRecv(e: MessageEvent<GbMsg<MsgToGb>>) {
-  console.log("recieved msg", e);
   let msg = e.data;
 
   switch (msg.type) {
+    case "runforsamples":
+      tickEmulator();
+      break;
+
     case "inputdown":
       gb?.key_down(msg.data);
       break;
 
     case "inputup":
       gb?.key_up(msg.data);
-      break;
-
-    case "sendcanvas":
-      canvas = msg.data.canvas;
       break;
 
     case "load":
@@ -62,12 +61,18 @@ worker.onmessage = function onRecv(e: MessageEvent<GbMsg<MsgToGb>>) {
         gb = newGb;
 
         loopHelper.reset();
-        rafId = requestAnimationFrame(runEmulator);
       }
       break;
 
     case "turbo":
       turbo = msg.data;
+
+      if (turbo) {
+        turboId = setTimeout(turboEmulator, 0);
+      } else {
+        clearTimeout(turboId);
+      }
+
       break;
 
     case "start":
@@ -102,41 +107,92 @@ worker.onmessage = function onRecv(e: MessageEvent<GbMsg<MsgToGb>>) {
   }
 };
 
-/**
- * Called on each request animation frame callback
- */
-const runEmulator = (_: DOMHighResTimeStamp) => {
-  if (!gb || !wasm) {
+const sendSamples = (samples: Float32Array) => {
+  postMessage(
+    {
+      type: "recvaudio",
+      data: samples,
+    },
+    [samples.buffer]
+  );
+};
+
+const sendEmptySamples = () => {
+  sendSamples(new Float32Array(512).fill(0));
+};
+
+const tickEmulator = () => {
+  if (!gb || !wasm || stopped || turbo) {
+    sendEmptySamples();
     return;
   }
 
   const now = performance.now();
 
-  let ticks = BigInt(Math.floor(loopHelper.calculateTicksToRun(now, turbo)));
+  if (rewinding) {
+    let state = rewindHelper.popState();
 
-  // This can happen if the user tabs out for too long I think
-  if (ticks > BigInt(4_000_000) && !turbo) {
-    ticks = BigInt(0);
-  } else if (turbo) {
-    // TODO: This seems to help a lot with syncing audio and
-    //       responsivenes of turbo mode in general
-    ticks = BigInt(1_000_000);
-  }
+    if (state) {
+      wasm.load_snapshot(gb, state);
+      const fb = gb.get_frame_buffer();
 
-  while (!stopped && !rewinding && ticks > BigInt(0)) {
-    let output = wasm?.batch_ticks(gb, ticks);
-
-    if (!turbo) {
       postMessage(
         {
-          type: "recvaudio",
-          data: output.samples,
+          type: "recvframe",
+          data: fb,
         },
-        [output.samples.buffer]
+        [fb.buffer]
       );
+
+      state.free();
     }
 
-    if (output.remaining_ticks <= BigInt(0)) {
+    sendEmptySamples();
+  } else {
+    const samples = wasm.handle_ticks(gb);
+    sendSamples(samples);
+
+    if (gb.consume_draw_flag()) {
+      const fb = gb.get_frame_buffer();
+      postMessage(
+        {
+          type: "recvframe",
+          data: fb,
+        },
+        [fb.buffer]
+      );
+      loopHelper.recordFrameDraw();
+    }
+
+    if (!turbo) {
+      let state = wasm.take_snapshot(gb);
+      rewindHelper.pushState(state);
+    }
+  }
+
+  if (!turbo) {
+    let fps = loopHelper.reportFps(now);
+    if (fps) {
+      const fpsMsg: GbMsg<MsgFromGb> = {
+        type: "fps",
+        data: fps,
+      };
+      postMessage(fpsMsg);
+    }
+  }
+};
+
+const turboEmulator = () => {
+  if (!gb || !wasm || !turbo) return;
+
+  const now = performance.now();
+
+  let ticks = BigInt(1_000_000);
+
+  while (ticks > BigInt(0)) {
+    let remaining_ticks = wasm?.batch_ticks(gb, ticks);
+
+    if (remaining_ticks <= BigInt(0)) {
       break;
     }
 
@@ -150,27 +206,11 @@ const runEmulator = (_: DOMHighResTimeStamp) => {
     );
 
     loopHelper.recordFrameDraw();
-    ticks = output.remaining_ticks;
+    ticks = remaining_ticks;
 
-    if (!rewinding && !turbo) {
+    if (!rewinding) {
       let state = wasm.take_snapshot(gb);
       rewindHelper.pushState(state);
-    }
-  }
-
-  if (rewinding) {
-    let state = rewindHelper.popState();
-    if (state) {
-      wasm.load_snapshot(gb, state);
-      const fb = gb.get_frame_buffer();
-      postMessage(
-        {
-          type: "recvframe",
-          data: fb,
-        },
-        [fb.buffer]
-      );
-      state.free();
     }
   }
 
@@ -183,7 +223,7 @@ const runEmulator = (_: DOMHighResTimeStamp) => {
     postMessage(fpsMsg);
   }
 
-  rafId = requestAnimationFrame(runEmulator);
+  turboId = setTimeout(turboEmulator, 0);
 };
 
 export default null as any;
