@@ -2,6 +2,7 @@ import { useRef } from "react";
 
 const useAudioHelper = (sampleRate: number) => {
   const currentAudioSeconds = useRef(0);
+  const volMult = useRef(1);
   const stopped = useRef(false);
   const audioCtx = useRef(
     new window.AudioContext({
@@ -11,6 +12,10 @@ const useAudioHelper = (sampleRate: number) => {
 
   const needMoreSamples = (): boolean => {
     return currentAudioSeconds.current <= audioCtx.current.currentTime + 0.075;
+  };
+
+  const setVolMult = (mult: number) => {
+    volMult.current = mult;
   };
 
   const handleAudio = (samples: Float32Array) => {
@@ -30,7 +35,7 @@ const useAudioHelper = (sampleRate: number) => {
     for (let channel = 0; channel < 2; channel += 1) {
       const nowBuffering = audioBuffer.getChannelData(channel);
       for (let i = 0; i < frameCount; i += 1) {
-        nowBuffering[i] = samples[i * 2 + channel];
+        nowBuffering[i] = samples[i * 2 + channel] * volMult.current;
       }
     }
 
@@ -60,6 +65,7 @@ const useAudioHelper = (sampleRate: number) => {
     stop,
     reset,
     needMoreSamples,
+    setVolMult,
   };
 };
 

@@ -36,6 +36,7 @@ export type GameBoyContext = {
   stop: () => void;
   takeSnapshot: () => void;
   loadSnapshot: () => void;
+  setVolumeMultiplier: (mult: number) => void;
 };
 
 const keyToKeycode = (key: string): Keycode | undefined => {
@@ -243,6 +244,7 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       loadGame,
       takeSnapshot: () => worker.current?.postMessage({ type: "takesnapshot" }),
       loadSnapshot: () => worker.current?.postMessage({ type: "loadsnapshot" }),
+      setVolumeMultiplier: (mult) => audioHelper.setVolMult(mult),
     }));
 
     return (

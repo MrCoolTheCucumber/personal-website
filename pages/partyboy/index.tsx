@@ -135,6 +135,22 @@ const GBPage = () => {
         >
           Load
         </button>
+
+        <input
+          type="range"
+          id="volume"
+          name="volume"
+          min="0"
+          max="1.5"
+          defaultValue="1"
+          step="0.01"
+          onChange={(e) =>
+            gbRef.current?.setVolumeMultiplier(
+              Number.parseFloat(e.target.value)
+            )
+          }
+        />
+
         <div className={styles.fps} style={{ width: "120px" }}>
           {`FPS: ${fps.toFixed(2)} (${fpsPercentage.toFixed(0)}%)`}
         </div>
