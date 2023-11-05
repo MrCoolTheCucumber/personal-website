@@ -5,16 +5,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import {
-  BitPackedState,
-  GameBoy,
-  Keycode,
-} from "@mrcoolthecucumber/gameboy_web";
-import useLoopHelper from "./useLoopHelper";
-import useRewindHelper from "./useRewindHelper";
+import { BitPackedState, Keycode } from "@mrcoolthecucumber/gameboy_web";
 import useAudioHelper from "./useAudioHelper";
-
-type GameBoyWebInterface = typeof import("@mrcoolthecucumber/gameboy_web");
+import { GbMsg, MsgFromGb, MsgToGb } from "./gbMsg.ts";
+import GBWorker from "../../components/gameboy/gameboy.worker.ts";
 
 /**
  *  Number of cycles per second the gameboy does in single speed mode.
@@ -40,10 +34,8 @@ export type GameBoyContext = {
   loadGame: (cart: GameBoyCartridge) => void;
   start: () => void;
   stop: () => void;
-  takeSnapshot: () => BitPackedState | undefined;
-  loadSnapshot: (snapshot: BitPackedState) => void;
-  startRewind: () => void;
-  stopRewind: () => void;
+  takeSnapshot: () => void;
+  loadSnapshot: () => void;
 };
 
 const keyToKeycode = (key: string): Keycode | undefined => {
@@ -72,61 +64,65 @@ const keyToKeycode = (key: string): Keycode | undefined => {
 
 const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
   function GameBoyComponent(props: GameBoyComponentProps, ref) {
-    const loopHelper = useLoopHelper(500, SPEED);
-    const rewindHelper = useRewindHelper();
     const audioHelper = useAudioHelper(48000);
 
-    const [gbWasm, setGbWasm] = useState<GameBoyWebInterface>();
     const [gbScale, setGbScale] = useState(props.gbScale ?? 2);
-
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const gbInstance = useRef<GameBoy | null>(null);
+    const currentFrame = useRef<Uint8Array>();
+
     const rafId = useRef(-1);
-    const turbo = useRef(false);
     const onKeyUpHandlerRef = useRef<(e: KeyboardEvent) => void>();
     const onKeyDownHandlerRef = useRef<(e: KeyboardEvent) => void>();
-    const stopped = useRef(false);
-    const rewinding = useRef(false);
+
+    const worker = useRef<Worker>();
 
     const setUpEventHandlers = () => {
       onKeyDownHandlerRef.current = (e: KeyboardEvent) => {
-        let gb = gbInstance.current;
-        if (!gb || e.repeat) return;
-
+        if (e.repeat) return;
         let keycode = keyToKeycode(e.key);
         if (keycode !== undefined) {
-          gb.key_down(keycode);
+          worker.current?.postMessage({
+            type: "inputdown",
+            data: keycode,
+          });
         }
-
         if (e.key === " ") {
           e.preventDefault();
-          turbo.current = true;
-          audioHelper.stop();
+          worker.current?.postMessage({
+            type: "turbo",
+            data: true,
+          });
+          // audioHelper.stop();
         }
-
         if (e.key == "q") {
           e.preventDefault();
-          rewinding.current = true;
+          worker.current?.postMessage({
+            type: "startrewind",
+          });
         }
       };
       onKeyUpHandlerRef.current = (e: KeyboardEvent) => {
-        let gb = gbInstance.current;
-        if (!gb || e.repeat) return;
-
+        if (e.repeat) return;
         let keycode = keyToKeycode(e.key);
         if (keycode !== undefined) {
-          gb.key_up(keycode);
+          worker.current?.postMessage({
+            type: "inputup",
+            data: keycode,
+          });
         }
-
         if (e.key === " ") {
           e.preventDefault();
-          turbo.current = false;
-          audioHelper.reset();
+          worker.current?.postMessage({
+            type: "turbo",
+            data: false,
+          });
+          // audioHelper.reset();
         }
-
         if (e.key == "q") {
           e.preventDefault();
-          rewinding.current = false;
+          worker.current?.postMessage({
+            type: "stoprewind",
+          });
         }
       };
 
@@ -134,53 +130,25 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       window.addEventListener("keyup", onKeyUpHandlerRef.current);
     };
 
-    const render = () => {
-      let gb = gbInstance.current;
-      let canvas = canvasRef.current;
-      if (!gb || !canvas) return;
-
-      let fb = gb.get_frame_buffer();
-
-      let ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      let imgData = ctx.getImageData(0, 0, 160, 144);
-      for (let i = 0; i < 160 * 144 * 3; i += 3) {
-        let r = fb[i];
-        let g = fb[i + 1];
-        let b = fb[i + 2];
-
-        let imgDataIndex = (i / 3) * 4;
-        imgData.data[imgDataIndex] = r;
-        imgData.data[imgDataIndex + 1] = g;
-        imgData.data[imgDataIndex + 2] = b;
-        imgData.data[imgDataIndex + 3] = 255;
-      }
-
-      ctx.putImageData(imgData, 0, 0);
-    };
-
     useEffect(() => {
-      const loadWasm = async () => {
-        const wasm = await import("@mrcoolthecucumber/gameboy_web");
-        setGbWasm(wasm);
-      };
-
-      if (!gbWasm) {
-        loadWasm().then(() => {
-          if (props.game) {
-            loadGame(props.game);
-          }
-        });
-      } else if (props.game) {
-        loadGame(props.game);
+      if (!worker.current) {
+        const _worker: Worker = new GBWorker();
+        _worker.onmessage = onWorkerRecv;
+        worker.current = _worker;
+      } else {
+        console.log("worker already initted!");
       }
 
       setUpEventHandlers();
 
       return () => {
+        console.log("tearing down...");
+
+        worker.current?.postMessage({
+          type: "shutdown",
+        });
+
         window.cancelAnimationFrame(rafId.current);
-        gbInstance.current?.free();
 
         window.removeEventListener(
           "keydown",
@@ -191,77 +159,72 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
           onKeyUpHandlerRef.current ?? (() => {})
         );
       };
-    }, [gbWasm]);
+    }, []);
 
-    /**
-     * Called on each request animation frame callback
-     */
-    const runEmulator = (_: DOMHighResTimeStamp) => {
-      if (!gbInstance.current || !gbWasm) {
+    const loadGame = (cart: GameBoyCartridge) => {
+      worker.current?.postMessage({
+        type: "load",
+        data: {
+          cart,
+        },
+      });
+    };
+
+    const onWorkerRecv = function (e: MessageEvent<GbMsg<MsgFromGb>>) {
+      let msg = e.data;
+
+      switch (msg.type) {
+        case "ready":
+          if (props.game) {
+            loadGame(props.game);
+            rafId.current = window.requestAnimationFrame(renderLoop);
+          }
+          break;
+
+        case "fps":
+          props.onReportFps(msg.data);
+          break;
+
+        case "recvframe":
+          currentFrame.current = msg.data;
+          break;
+
+        case "recvaudio":
+          audioHelper.handleAudio(msg.data);
+          break;
+      }
+    };
+
+    // TODO: call createImageBitmap(ImageData) in the webworker, possibly in wasm itself,
+    //       and then send that to the main thread instead of the framebuffer
+    const renderLoop = (_: DOMHighResTimeStamp) => {
+      if (!currentFrame.current || !canvasRef.current) {
+        rafId.current = window.requestAnimationFrame(renderLoop);
         return;
       }
 
-      const now = performance.now();
-
-      let ticks = BigInt(
-        Math.floor(loopHelper.calculateTicksToRun(now, turbo.current))
-      );
-
-      // This can happen if the user tabs out for too long I think
-      if (ticks > BigInt(4_000_000) && !turbo.current) {
-        ticks = BigInt(0);
+      let ctx = canvasRef.current.getContext("2d", {
+        willReadFrequently: true,
+      });
+      if (!ctx) {
+        rafId.current = window.requestAnimationFrame(renderLoop);
+        return;
       }
 
-      while (!stopped.current && !rewinding.current && ticks > BigInt(0)) {
-        let output = gbWasm?.batch_ticks(gbInstance.current, ticks);
-
-        audioHelper.handleAudio(output.samples);
-
-        if (output.remaining_ticks <= BigInt(0)) {
-          break;
-        }
-
-        render();
-        loopHelper.recordFrameDraw();
-        ticks = output.remaining_ticks;
-
-        if (!rewinding.current) {
-          let state = gbWasm.take_snapshot(gbInstance.current);
-          rewindHelper.pushState(state);
-        }
+      let imgData = new ImageData(160, 144);
+      for (let i = 0; i < 160 * 144 * 3; i += 3) {
+        let r = currentFrame.current[i];
+        let g = currentFrame.current[i + 1];
+        let b = currentFrame.current[i + 2];
+        let imgDataIndex = (i / 3) * 4;
+        imgData.data[imgDataIndex] = r;
+        imgData.data[imgDataIndex + 1] = g;
+        imgData.data[imgDataIndex + 2] = b;
+        imgData.data[imgDataIndex + 3] = 255;
       }
 
-      if (rewinding.current) {
-        let state = rewindHelper.popState();
-        if (state) {
-          gbWasm.load_snapshot(gbInstance.current, state);
-          render();
-          state.free();
-        }
-      }
-
-      let fps = loopHelper.reportFps(now);
-      if (fps) {
-        props.onReportFps(fps);
-      }
-
-      rafId.current = window.requestAnimationFrame(runEmulator);
-    };
-
-    const loadGame = (cart: GameBoyCartridge) => {
-      const newGb = gbWasm?.GameBoyBuilder.new().rom(cart.rom).build();
-      const canvas = canvasRef.current;
-
-      if (newGb && canvas) {
-        if (gbInstance.current) {
-          gbInstance.current.free();
-        }
-        window.cancelAnimationFrame(rafId.current);
-        gbInstance.current = newGb;
-
-        loopHelper.reset();
-        rafId.current = window.requestAnimationFrame(runEmulator);
-      }
+      ctx.putImageData(imgData, 0, 0);
+      rafId.current = window.requestAnimationFrame(renderLoop);
     };
 
     useImperativeHandle(ref, () => ({
@@ -269,19 +232,11 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
       decreaseScale: () => {
         if (gbScale > 1) setGbScale(gbScale - 1);
       },
-      start: () => (stopped.current = false),
-      stop: () => (stopped.current = true),
+      start: () => worker.current?.postMessage({ type: "start" }),
+      stop: () => worker.current?.postMessage({ type: "stop" }),
       loadGame,
-      takeSnapshot: () => {
-        if (!gbWasm || !gbInstance.current) return;
-        return gbWasm.take_snapshot(gbInstance.current);
-      },
-      loadSnapshot: (snapshot: BitPackedState) => {
-        if (!gbWasm || !gbInstance.current) return;
-        gbWasm.load_snapshot(gbInstance.current, snapshot);
-      },
-      startRewind: () => (rewinding.current = true),
-      stopRewind: () => (rewinding.current = false),
+      takeSnapshot: () => worker.current?.postMessage({ type: "takesnapshot" }),
+      loadSnapshot: () => worker.current?.postMessage({ type: "loadsnapshot" }),
     }));
 
     return (

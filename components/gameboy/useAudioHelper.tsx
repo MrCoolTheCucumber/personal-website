@@ -37,12 +37,14 @@ const useAudioHelper = (sampleRate: number) => {
     // TODO after some time, the game gets audio delay
     // Reset time if close to buffer underrun
     if (currentAudioSeconds.current <= audioCtx.current.currentTime + 0.02) {
-      currentAudioSeconds.current = audioCtx.current.currentTime + 0.06;
+      console.log("Buffer underun detected?");
+      currentAudioSeconds.current = audioCtx.current.currentTime + 0.017;
     }
     audioSource.start(currentAudioSeconds.current);
     currentAudioSeconds.current += frameCount / audioCtx.current.sampleRate;
   };
 
+  // https://stackoverflow.com/a/76916488
   const stop = () => {
     stopped.current = true;
   };
