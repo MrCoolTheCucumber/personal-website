@@ -1,34 +1,32 @@
-import { useRef } from "react";
-
 const useLoopHelper = (reportFreqMs: number, gbSpeed: number) => {
-  const lastLoop = useRef(performance.now());
-  const lastFpsReport = useRef(performance.now());
-  const framesDrawn = useRef(0);
+  let lastLoop = performance.now();
+  let lastFpsReport = performance.now();
+  let framesDrawn = 0;
   const fpsReportRateMs = reportFreqMs;
 
   const reset = () => {
-    lastLoop.current = performance.now();
-    lastFpsReport.current = performance.now();
-    framesDrawn.current = 0;
+    lastLoop = performance.now();
+    lastFpsReport = performance.now();
+    framesDrawn = 0;
   };
 
   const calculateTicksToRun = (now: DOMHighResTimeStamp, turbo = false) => {
-    const elapsedMs = now - lastLoop.current;
+    const elapsedMs = now - lastLoop;
     const ticks = turbo ? gbSpeed : (elapsedMs * gbSpeed) / 1000;
-    lastLoop.current = now;
+    lastLoop = now;
     return ticks;
   };
 
   const recordFrameDraw = () => {
-    framesDrawn.current += 1;
+    framesDrawn += 1;
   };
 
   const reportFps = (now: DOMHighResTimeStamp) => {
-    const elapsedSinceLastFpsReport = now - lastFpsReport.current;
+    const elapsedSinceLastFpsReport = now - lastFpsReport;
     if (elapsedSinceLastFpsReport >= fpsReportRateMs) {
-      lastFpsReport.current = now;
-      const fps = framesDrawn.current / (elapsedSinceLastFpsReport / 1000);
-      framesDrawn.current = 0;
+      lastFpsReport = now;
+      const fps = framesDrawn / (elapsedSinceLastFpsReport / 1000);
+      framesDrawn = 0;
 
       return fps;
     }

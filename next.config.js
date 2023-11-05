@@ -6,6 +6,7 @@ const nextConfig = {
     domains: ["user-images.githubusercontent.com", "i.imgur.com"],
     unoptimized: true,
   },
+  output: "export", //
   webpack: (config, ctx) => {
     config.experiments.asyncWebAssembly = true;
 
@@ -14,6 +15,11 @@ const nextConfig = {
     config.module.rules.push({
       test: /\.wasm$/,
       type: "webassembly/async",
+    });
+
+    config.module.rules.unshift({
+      test: /\.worker\.ts$/,
+      use: { loader: "worker-loader" },
     });
 
     if (ctx.isServer) {
