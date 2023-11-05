@@ -1,4 +1,3 @@
-import { BitPackedState } from "@mrcoolthecucumber/gameboy_web";
 import React, { useRef, useState } from "react";
 import GameBoyComponent, {
   GameBoyContext,
@@ -20,7 +19,6 @@ const GBPage = () => {
   const games = useRef<Game[]>([]);
   const gameRef = useRef<Game>();
   const gbRef = useRef<GameBoyContext>(null);
-  const snapshot = useRef<BitPackedState>();
 
   const reset = () => {
     if (gameRef.current) {
@@ -127,22 +125,32 @@ const GBPage = () => {
         {renderStartStopButton()}
         <button
           className="button"
-          onClick={() => {
-            snapshot.current = gbRef.current?.takeSnapshot();
-          }}
+          onClick={() => gbRef.current?.takeSnapshot()}
         >
           Take
         </button>
         <button
           className={`button ${styles.footerBtnPad}`}
-          onClick={() => {
-            if (snapshot.current && gbRef.current) {
-              gbRef.current?.loadSnapshot(snapshot.current);
-            }
-          }}
+          onClick={() => gbRef.current?.loadSnapshot()}
         >
           Load
         </button>
+
+        <input
+          type="range"
+          id="volume"
+          name="volume"
+          min="0"
+          max="1.5"
+          defaultValue="1"
+          step="0.01"
+          onChange={(e) =>
+            gbRef.current?.setVolumeMultiplier(
+              Number.parseFloat(e.target.value)
+            )
+          }
+        />
+
         <div className={styles.fps} style={{ width: "120px" }}>
           {`FPS: ${fps.toFixed(2)} (${fpsPercentage.toFixed(0)}%)`}
         </div>

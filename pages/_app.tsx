@@ -2,6 +2,7 @@ import "../styles/globals.css";
 import type { ReactElement, ReactNode } from "react";
 import type { NextPage } from "next";
 import type { AppProps } from "next/app";
+import dynamic from "next/dynamic";
 
 export type NextPageWithLayout = NextPage & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -16,4 +17,8 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
   return getLayout(<Component {...pageProps} />);
 }
 
-export default MyApp;
+// https://github.com/vercel/next.js/issues/30170#issuecomment-1286250406
+// TODO: Disable server side rendering for the required component only
+export default dynamic(() => Promise.resolve(MyApp), {
+  ssr: false,
+});
