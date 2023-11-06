@@ -93,7 +93,6 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
             type: "turbo",
             data: true,
           });
-          // audioHelper.stop();
         }
         if (e.key == "q") {
           e.preventDefault();
@@ -117,13 +116,14 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
             type: "turbo",
             data: false,
           });
-          // audioHelper.reset();
+          audioHelper.reset();
         }
         if (e.key == "q") {
           e.preventDefault();
           worker.current?.postMessage({
             type: "stoprewind",
           });
+          audioHelper.reset();
         }
       };
 
@@ -204,7 +204,10 @@ const GameBoyComponent = forwardRef<GameBoyContext, GameBoyComponentProps>(
     //       and then send that to the main thread instead of the framebuffer
     const renderLoop = (_: DOMHighResTimeStamp) => {
       if (audioHelper.needMoreSamples() && worker.current) {
-        worker.current.postMessage({ type: "runforsamples" });
+        worker.current.postMessage({
+          type: "runforsamples",
+          data: audioHelper.samplesNeeded(),
+        });
       }
 
       if (!currentFrame.current || !canvasRef.current) {

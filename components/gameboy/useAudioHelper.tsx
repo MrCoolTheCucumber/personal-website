@@ -14,6 +14,12 @@ const useAudioHelper = (sampleRate: number) => {
     return currentAudioSeconds.current <= audioCtx.current.currentTime + 0.075;
   };
 
+  const samplesNeeded = (): number => {
+    const delta =
+      audioCtx.current.currentTime + 0.075 - currentAudioSeconds.current;
+    return delta * sampleRate;
+  };
+
   const setVolMult = (mult: number) => {
     volMult.current = mult;
   };
@@ -53,11 +59,7 @@ const useAudioHelper = (sampleRate: number) => {
   };
 
   const reset = () => {
-    audioCtx.current.close();
-    audioCtx.current = new window.AudioContext({
-      sampleRate,
-    });
-    stopped.current = false;
+    currentAudioSeconds.current = audioCtx.current.currentTime;
   };
 
   return {
@@ -65,6 +67,7 @@ const useAudioHelper = (sampleRate: number) => {
     stop,
     reset,
     needMoreSamples,
+    samplesNeeded,
     setVolMult,
   };
 };
