@@ -35,7 +35,7 @@ worker.onmessage = function onRecv(e: MessageEvent<GbMsg<MsgToGb>>) {
 
   switch (msg.type) {
     case "runforsamples":
-      tickEmulator();
+      tickEmulator(msg.data);
       break;
 
     case "inputdown":
@@ -121,7 +121,7 @@ const sendEmptySamples = () => {
   sendSamples(new Float32Array(512).fill(0));
 };
 
-const tickEmulator = () => {
+const tickEmulator = (samplesNeeded: number) => {
   if (!gb || !wasm || stopped || turbo) {
     sendEmptySamples();
     return;
@@ -149,24 +149,37 @@ const tickEmulator = () => {
 
     sendEmptySamples();
   } else {
-    const samples = wasm.handle_ticks(gb);
-    sendSamples(samples);
+    let remaining = samplesNeeded;
 
-    if (gb.consume_draw_flag()) {
-      const fb = gb.get_frame_buffer();
-      postMessage(
-        {
-          type: "recvframe",
-          data: fb,
-        },
-        [fb.buffer]
-      );
-      loopHelper.recordFrameDraw();
-    }
+    // TODO: make handle_ticks take in a sample number, rather
+    // than returning fixed chunks
+    while (remaining > 0) {
+      const samples = wasm.handle_ticks(gb);
+      console.log(remaining, samples.length);
+      remaining -= samples.length;
+      sendSamples(samples);
 
-    if (!turbo) {
-      let state = wasm.take_snapshot(gb);
-      rewindHelper.pushState(state);
+      // TODO: this has vsync issues?
+      // we need to send the frame buffer as soon as the flag is set
+      // also we need to be able to request for x amount of samples from the main thread
+      // to prevent the initial buffer underrun
+
+      if (gb.consume_draw_flag()) {
+        const fb = gb.get_frame_buffer();
+        postMessage(
+          {
+            type: "recvframe",
+            data: fb,
+          },
+          [fb.buffer]
+        );
+        loopHelper.recordFrameDraw();
+
+        if (!turbo) {
+          let state = wasm.take_snapshot(gb);
+          rewindHelper.pushState(state);
+        }
+      }
     }
   }
 
