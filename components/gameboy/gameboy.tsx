@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Keycode } from "@mrcoolthecucumber/gameboy_web";
+import { Keycode } from "@mrcoolthecucumber/partyboy-core-web";
 import useAudioHelper from "./useAudioHelper";
 import { GbMsg, MsgFromGb } from "./gbMsg.ts";
 import GBWorker from "../../components/gameboy/gameboy.worker.ts";

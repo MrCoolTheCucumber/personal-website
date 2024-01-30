@@ -1,14 +1,11 @@
-import { BitPackedState } from "@mrcoolthecucumber/gameboy_web";
-
 const useRewindHelper = () => {
   const CAPACITY = 60 * 12;
-  const history: BitPackedState[] = [];
+  const history: Uint8Array[] = [];
 
-  const pushState = (state: BitPackedState) => {
+  const pushState = (state: Uint8Array) => {
     history.push(state);
     if (history.length > CAPACITY) {
-      let state = history.shift();
-      state?.free();
+      history.shift();
     }
   };
 
