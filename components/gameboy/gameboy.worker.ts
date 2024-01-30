@@ -1,8 +1,9 @@
-import { BitPackedState, GameBoy } from "@mrcoolthecucumber/gameboy_web";
+import { GameBoy } from "@mrcoolthecucumber/partyboy-core-web";
 import useLoopHelper from "./useLoopHelper";
 import { GbMsg, MsgFromGb, MsgToGb } from "./gbMsg";
 import useRewindHelper from "./useRewindHelper";
-type GameBoyWebInterface = typeof import("@mrcoolthecucumber/gameboy_web");
+type GameBoyWebInterface =
+  typeof import("@mrcoolthecucumber/partyboy-core-web");
 
 const worker: Worker = self as any;
 const SPEED = 4_194_304;
@@ -11,7 +12,7 @@ const loopHelper = useLoopHelper(500, SPEED); // eslint-disable-line
 const rewindHelper = useRewindHelper(); // eslint-disable-line
 
 let wasm: GameBoyWebInterface | null = null;
-let snapshot: BitPackedState | undefined;
+let snapshot: Uint8Array | undefined;
 let stopped = false;
 let gb: GameBoy | null = null;
 let rafId = -1;
@@ -22,7 +23,7 @@ let rewinding = false;
 console.log("WebWorker running...");
 
 (async () => {
-  const _wasm = await import("@mrcoolthecucumber/gameboy_web");
+  const _wasm = await import("@mrcoolthecucumber/partyboy-core-web");
   wasm = _wasm;
   wasm.init_panic_hook();
 })().then(() => {
@@ -143,8 +144,6 @@ const tickEmulator = (samplesNeeded: number) => {
         },
         [fb.buffer]
       );
-
-      state.free();
     }
 
     sendEmptySamples();
